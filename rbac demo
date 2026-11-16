@@ -1,0 +1,77 @@
+	"""
+Basic Role-Based Access Control (RBAC) demo with fictional users.
+
+Author: Agwu Evagreen
+Matric No: 24/13887
+Department: Cybersecurity
+"""
+
+from enum import Enum
+
+
+class Permission(Enum):
+    READ = "read"
+    WRITE = "write"
+    DELETE = "delete"
+    MANAGE_USERS = "manage_users"
+
+
+# 1. Define roles and the permissions each role grants
+ROLES = {
+    "admin": {Permission.READ, Permission.WRITE, Permission.DELETE, Permission.MANAGE_USERS},
+    "editor": {Permission.READ, Permission.WRITE},
+    "viewer": {Permission.READ},
+}
+
+# Fictional users, each assigned one or more roles
+USERS = {
+    "nina": ["admin"],
+    "joy": ["editor"],
+    "emerald": ["viewer"],
+    "tobe": ["viewer", "editor"],  # multiple roles -> combined permissions
+    "erica": [],                    # no roles -> no access
+}
+
+
+# 2. Permission check function
+def has_permission(username: str, permission: Permission) -> bool:
+    """Return True if any of the user's roles grants the permission."""
+    roles = USERS.get(username)
+    if roles is None:
+        return False  # unknown user: deny by default
+    return any(permission in ROLES.get(role, set()) for role in roles)
+
+
+def access(username: str, permission: Permission, resource: str = "report.txt") -> str:
+    if has_permission(username, permission):
+        return f"ALLOWED: {username} can {permission.value} '{resource}'"
+    return f"DENIED:  {username} cannot {permission.value} '{resource}'"
+
+
+# 3. Tests
+def run_tests():
+    cases = [
+        ("nina", Permission.DELETE, True),
+        ("nina", Permission.MANAGE_USERS, True),
+        ("joy", Permission.WRITE, True),
+        ("joy", Permission.DELETE, False),
+        ("emerald", Permission.READ, True),
+        ("emerald", Permission.WRITE, False),
+        ("tobe", Permission.WRITE, True),         # inherited from editor
+        ("tobe", Permission.MANAGE_USERS, False),
+        ("erica", Permission.READ, False),         # no roles
+        ("delight", Permission.READ, False),      # unknown user
+    ]
+
+    print("--- Access demo ---")
+    for user, perm, _ in cases:
+        print(access(user, perm))
+
+    print("\n--- Assertions ---")
+    for user, perm, expected in cases:
+        assert has_permission(user, perm) == expected, f"FAILED: {user} / {perm.value}"
+    print(f"All {len(cases)} tests passed.")
+
+
+if __name__ == "__main__":
+    run_tests()
